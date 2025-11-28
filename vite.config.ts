@@ -87,12 +87,7 @@ const localFileServerPlugin = (): Plugin => {
           // If the client sends encoded segments, ensure only one decode happens.
           // Remove explicit decodeURIComponent to avoid double-decoding.
 
-          // Security: Validate requestPath to prevent directory traversal
-          if (requestPath.includes("..")) {
-            res.statusCode = 403;
-            res.end("Invalid path");
-            return;
-          }
+          // The actual security boundary is enforced by the path normalization and containment check below.
 
           const fullPath = join(normalizedLocalPath, requestPath);
 
@@ -117,7 +112,7 @@ const localFileServerPlugin = (): Plugin => {
             const stats = statSync(fullPath);
 
             if (stats.isDirectory()) {
-              res.statusCode = 400;
+              res.statusCode = 403;
               res.end("Cannot serve directory");
               return;
             }
@@ -184,14 +179,35 @@ const localFileServerPlugin = (): Plugin => {
             }
 
             // Serve full file if no range request
-            const content = readFileSync(fullPath);
-            res.setHeader("Content-Length", content.length.toString());
-            res.end(content);
+            res.setHeader("Content-Length", fileSize.toString());
+            const stream = require("fs").createReadStream(fullPath);
+            stream.on("error", (err) => {
+              console.error(err);
+              res.statusCode = 500;
+              res.end("Internal server error");
+            });
+            stream.pipe(res);
           } catch (err) {
             console.error(err);
-            res.statusCode = 404;
-            res.end("File not found");
-          }
+            if (err && typeof err === "object" && "code" in err) {
+              switch (err.code) {
+                case "ENOENT":
+                  res.statusCode = 404;
+                  res.end("File not found");
+                  break;
+                case "EACCES":
+                case "EPERM":
+                  res.statusCode = 403;
+                  res.end("Permission denied");
+                  break;
+                default:
+                  res.statusCode = 500;
+                  res.end("Filesystem error");
+              }
+            } else {
+              res.statusCode = 500;
+              res.end("Filesystem error");
+            }
         } catch (err) {
           console.error(err);
           res.statusCode = 500;
