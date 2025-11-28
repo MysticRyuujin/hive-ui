@@ -83,10 +83,10 @@ const localFileServerPlugin = (): Plugin => {
             return;
           }
 
-          const fullPath = join(decodedLocalPath, requestPath);
+          const fullPath = join(localPath, requestPath);
 
           // Security: Normalize the path and verify it's still within the base directory
-          const normalizedBasePath = resolve(decodedLocalPath);
+          const normalizedBasePath = resolve(localPath);
           const normalizedFullPath = resolve(fullPath);
           // Ensure the full path is strictly within the base directory by checking
           // that it either equals the base path or starts with base path + separator
