@@ -4,7 +4,7 @@ import tailwindcssPostcss from "@tailwindcss/postcss";
 import autoprefixer from "autoprefixer";
 import { execSync } from "child_process";
 import { readFileSync, statSync } from "fs";
-import { join, resolve, sep } from "path";
+import { extname, join, resolve, sep } from "path";
 import type { Plugin } from "vite";
 
 // Get git info
@@ -121,7 +121,7 @@ const localFileServerPlugin = (): Plugin => {
             }
 
             const fileSize = stats.size;
-            const ext = fullPath.split(".").pop()?.toLowerCase();
+            const ext = extname(fullPath).slice(1).toLowerCase();
 
             // Set appropriate content type
             const contentType =
