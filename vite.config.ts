@@ -153,12 +153,18 @@ const localFileServerPlugin = (): Plugin => {
             const rangeHeader = req.headers.range;
             if (rangeHeader) {
               // Only single-range requests are supported; multi-range requests will return 416 (RFC 7233)
-              if (rangeHeader.includes(',')) {
-                // Multi-range requests are not supported
-                res.statusCode = 416;
-                res.setHeader("Content-Range", `bytes */${fileSize}`);
-                res.end("Range Not Satisfiable");
-                return;
+              // Parse the range header to properly detect multi-range requests
+              // Format: bytes=start-end or bytes=start-end,start-end,...
+              if (rangeHeader.startsWith('bytes=')) {
+                const rangesPart = rangeHeader.slice(6); // Remove 'bytes=' prefix
+                const ranges = rangesPart.split(',').map(r => r.trim()).filter(Boolean);
+                if (ranges.length > 1) {
+                  // Multi-range requests are not supported
+                  res.statusCode = 416;
+                  res.setHeader("Content-Range", `bytes */${fileSize}`);
+                  res.end("Range Not Satisfiable");
+                  return;
+                }
               }
               const rangeMatch = rangeHeader.match(/^bytes=(\d+)-(\d*)$/);
               if (rangeMatch) {

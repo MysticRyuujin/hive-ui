@@ -2,18 +2,33 @@ import { Directory, TestRun, TestDetail } from "../types";
 
 const getTimestamp = () => new Date().getTime();
 
-// Check if an address is a local path (starts with local://, or is not an HTTP(S) URL)
-// Note: Protocol-relative URLs (starting with //) are treated as remote URLs, not local paths
+// Check if an address is a local path
+// Returns true for:
+//   - Explicit local:// prefixed paths
+//   - Absolute paths (Unix /path or Windows C:\path)
+//   - Relative paths (anything else)
+// Returns false for:
+//   - Any protocol URL (http://, https://, ftp://, file://, etc.)
+//   - Protocol-relative URLs (//example.com)
 const isLocalPath = (address: string): boolean => {
-  // Returns true for local:// addresses, or any address not starting with http://, https://, or //
-  return (
-    address.startsWith("local://") ||
-    (
-      !address.startsWith("http://") &&
-      !address.startsWith("https://") &&
-      !address.startsWith("//")
-    )
-  );
+  // Explicit local:// prefix
+  if (address.startsWith("local://")) {
+    return true;
+  }
+
+  // Check for any protocol URL (scheme://)
+  // Matches: http://, https://, ftp://, file://, etc.
+  if (/^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//.test(address)) {
+    return false;
+  }
+
+  // Check for protocol-relative URLs (//example.com)
+  if (address.startsWith("//")) {
+    return false;
+  }
+
+  // Everything else is treated as local (absolute or relative paths)
+  return true;
 };
 
 /**
@@ -111,8 +126,20 @@ export const getLogFileUrl = (
   discoveryAddr: string,
   logFile: string
 ): string => {
-  // If logFile already contains a path (starts with a directory), use it as-is
-  // Otherwise, assume it's in the /results/ directory
-  const filePath = logFile.includes('/') ? `/${logFile}` : `/results/${logFile}`;
+  // Determine the file path:
+  // - If logFile starts with /, it's already an absolute path, use as-is
+  // - If logFile contains / (but doesn't start with it), it's a relative path
+  // - Otherwise, it's just a filename, so place it in /results/
+  let filePath: string;
+  if (logFile.startsWith('/')) {
+    // Already an absolute path
+    filePath = logFile;
+  } else if (logFile.includes('/')) {
+    // Relative path (e.g., "subdir/file.log")
+    filePath = `/${logFile}`;
+  } else {
+    // Just a filename (e.g., "file.log")
+    filePath = `/results/${logFile}`;
+  }
   return getFetchUrl(discoveryAddr, filePath);
 };
