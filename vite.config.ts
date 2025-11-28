@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcssPostcss from "@tailwindcss/postcss";
 import autoprefixer from "autoprefixer";
 import { execSync } from "child_process";
-import { readFileSync, statSync } from "fs";
+import { closeSync, openSync, readFileSync, readSync, statSync } from "fs";
 import { extname, join, resolve, sep } from "path";
 import type { Plugin } from "vite";
 
@@ -83,10 +83,10 @@ const localFileServerPlugin = (): Plugin => {
             return;
           }
 
-          const fullPath = join(decodedLocalPath, requestPath);
+          const fullPath = join(localPath, requestPath);
 
           // Security: Normalize the path and verify it's still within the base directory
-          const normalizedBasePath = resolve(decodedLocalPath);
+          const normalizedBasePath = resolve(localPath);
           const normalizedFullPath = resolve(fullPath);
           // Ensure the full path is strictly within the base directory by checking
           // that it either equals the base path or starts with base path + separator
@@ -147,8 +147,10 @@ const localFileServerPlugin = (): Plugin => {
                 if (start >= 0 && start <= end && start < fileSize) {
                   // Valid range - serve partial content
                   const chunkSize = end - start + 1;
-                  const fullContent = readFileSync(fullPath);
-                  const content = fullContent.subarray(start, end + 1);
+                  const fd = openSync(fullPath, "r");
+                  const content = Buffer.alloc(chunkSize);
+                  readSync(fd, content, 0, chunkSize, start);
+                  closeSync(fd);
 
                   res.statusCode = 206; // Partial Content
                   res.setHeader(
