@@ -2,11 +2,12 @@ import { Directory, TestRun, TestDetail } from "../types";
 
 const getTimestamp = () => new Date().getTime();
 
-// Check if an address is a local path
+// Check if an address is a local file system path (absolute or relative)
 // Returns true for:
 //   - Explicit local:// prefixed paths
-//   - Absolute paths (Unix /path or Windows C:\path)
-//   - Relative paths (anything else)
+//   - Unix absolute paths (e.g., /path/to/file)
+//   - Windows absolute paths (e.g., C:\path\to\file)
+//   - Relative paths (e.g., data/file.txt, ./file.txt)
 // Returns false for:
 //   - Any protocol URL (http://, https://, ftp://, file://, etc.)
 //   - Protocol-relative URLs (//example.com)
@@ -74,8 +75,8 @@ const getFetchUrl = (baseAddress: string, filePath: string): string => {
     .join("/");
   // Ensure proper path joining: remove trailing slash from baseAddress and leading slash from filePath
   // then join with a single slash
-  const normalizedBase = baseAddress.replace(/\/+$/, ''); // Remove trailing slashes
-  const normalizedPath = encodedPath.replace(/^\/+/, ''); // Remove leading slashes
+  const normalizedBase = baseAddress.replace(/\/+$/, ""); // Remove trailing slashes
+  const normalizedPath = encodedPath.replace(/^\/+/, ""); // Remove leading slashes
   return `${normalizedBase}/${normalizedPath}?ts=${getTimestamp()}`;
 };
 
@@ -131,7 +132,8 @@ export const getLogFileUrl = (
 ): string => {
   // Security: Reject paths containing null bytes to prevent path truncation attacks
   if (logFile.includes("\0")) {
-    throw new Error("Invalid log file path");
+    // Return empty string to indicate invalid path - caller should handle this case
+    return "";
   }
 
   // Handle HTTP and local paths differently:
@@ -144,20 +146,23 @@ export const getLogFileUrl = (
   
   if (isLocal) {
     // For local paths, respect the path structure in logFile but normalize it
-    if (logFile.includes('/')) {
+    // Check for path separators (both forward and back slashes for cross-platform support)
+    if (logFile.includes("/") || logFile.includes("\\")) {
       // logFile contains a path - normalize it
-      // Remove leading slashes, then split and filter out dangerous sequences
-      let normalizedPath = logFile.replace(/^\/+/, '');
+      // First, normalize backslashes to forward slashes for consistent handling
+      let normalizedPath = logFile.replace(/\\/g, "/");
+      // Remove leading slashes
+      normalizedPath = normalizedPath.replace(/^\/+/, "");
       
       // Security: Normalize path segments to prevent traversal attacks
-      // Split by /, filter out empty segments and '..' sequences, then rejoin
-      const segments = normalizedPath.split('/').filter(segment => {
-        // Filter out empty segments and parent directory references
-        return segment !== '' && segment !== '..';
+      // Split by /, filter out dangerous segments ('..', '.') and empty segments, then rejoin
+      const segments = normalizedPath.split("/").filter(segment => {
+        // Filter out empty segments, current directory, and parent directory references
+        return segment !== "" && segment !== "." && segment !== "..";
       });
       
       // Rejoin segments - this prevents ../ from escaping the base directory
-      normalizedPath = segments.join('/');
+      normalizedPath = segments.join("/");
       filePath = `/${normalizedPath}`;
     } else {
       // Just a filename - place it in /results/
@@ -165,7 +170,7 @@ export const getLogFileUrl = (
     }
   } else {
     // For HTTP paths, always place in /results/ (matches master branch behavior)
-    const normalizedLogFile = logFile.replace(/^\/+/, ''); // Remove any leading slashes
+    const normalizedLogFile = logFile.replace(/^\/+/, ""); // Remove any leading slashes
     filePath = `/results/${normalizedLogFile}`;
   }
   
