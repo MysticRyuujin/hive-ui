@@ -160,7 +160,7 @@ const localFileServerPlugin = (): Plugin => {
                 res.end("Range Not Satisfiable");
                 return;
               }
-              const rangeMatch = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+              const rangeMatch = rangeHeader.match(/^bytes=(\d+)-(\d*)$/);
               if (rangeMatch) {
                 const start = parseInt(rangeMatch[1], 10);
                 let end = rangeMatch[2]
@@ -221,6 +221,9 @@ const localFileServerPlugin = (): Plugin => {
                 // If headers already sent, just destroy the stream and let client detect incomplete response
                 stream.destroy();
               }
+            });
+            stream.on("end", () => {
+              console.log("Successfully served file:", fullPath);
             });
             stream.on("end", () => {
               console.log("Successfully served file:", normalizedFullPath);
