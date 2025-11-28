@@ -15,7 +15,13 @@ const isLocalPath = (address: string): boolean => {
   );
 };
 
-// Convert local path to proxy URL
+/**
+ * Converts a local directory path and a relative file path into a proxy URL for fetching local files.
+ *
+ * @param {string} localPath - The base directory path. May include the 'local://' prefix, or be an absolute path (e.g., '/data' or 'C:\\data').
+ * @param {string} filePath - The relative file path within the local directory. Should use forward slashes ('/') as separators.
+ * @returns {string} The proxy URL to fetch the specified file from the local directory.
+ */
 const getLocalProxyUrl = (localPath: string, filePath: string): string => {
   // Remove local:// prefix if present
   const cleanPath = localPath.replace(/^local:\/\//, "");
@@ -30,6 +36,14 @@ const getLocalProxyUrl = (localPath: string, filePath: string): string => {
   return `/api/local${encodedFilePath}?path=${encodedPath}`;
 };
 
+/**
+ * Determines the correct URL to fetch a resource, using a local proxy URL if the base address is a local path,
+ * or a direct HTTP(S) URL otherwise.
+ *
+ * @param {string} baseAddress - The base address of the resource, which can be a local path or an HTTP(S) URL.
+ * @param {string} filePath - The path to the file/resource to fetch, relative to the base address.
+ * @returns {string} The URL to use for fetching the resource.
+ */
 // Get the actual URL to fetch from (either direct HTTP or through proxy)
 const getFetchUrl = (baseAddress: string, filePath: string): string => {
   if (isLocalPath(baseAddress)) {
