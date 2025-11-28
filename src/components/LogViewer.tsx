@@ -110,7 +110,6 @@ const LogViewer = () => {
         }
 
         const text = await response.text();
-        console.log(`[DEBUG] Log file fetched, length: ${text.length}`);
         setLogContent(text);
 
         // Calculate line count and file size

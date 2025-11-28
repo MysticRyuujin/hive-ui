@@ -106,7 +106,9 @@ const localFileServerPlugin = (): Plugin => {
                   ? parseInt(rangeMatch[2], 10)
                   : fileSize - 1;
 
+                // Validate range according to RFC 7233
                 if (start >= 0 && end < fileSize && start <= end) {
+                  // Valid range - serve partial content
                   const chunkSize = end - start + 1;
                   const fullContent = readFileSync(fullPath);
                   const content = fullContent.subarray(start, end + 1);
@@ -119,7 +121,19 @@ const localFileServerPlugin = (): Plugin => {
                   res.setHeader("Content-Length", chunkSize.toString());
                   res.end(content);
                   return;
+                } else {
+                  // Invalid range - return 416 Range Not Satisfiable per RFC 7233
+                  res.statusCode = 416;
+                  res.setHeader("Content-Range", `bytes */${fileSize}`);
+                  res.end("Range Not Satisfiable");
+                  return;
                 }
+              } else {
+                // Malformed range header - return 416
+                res.statusCode = 416;
+                res.setHeader("Content-Range", `bytes */${fileSize}`);
+                res.end("Range Not Satisfiable");
+                return;
               }
             }
 
