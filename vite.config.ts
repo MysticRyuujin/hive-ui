@@ -56,10 +56,17 @@ const localFileServerPlugin = (): Plugin => {
           // Check for Unix absolute paths (/) and Windows absolute paths (C:\, D:\, etc.)
           const isUnixAbsolute = localPath.startsWith("/");
           const isWindowsAbsolute = /^[a-zA-Z]:[/\\]/.test(localPath);
-          if (
-            (!isUnixAbsolute && !isWindowsAbsolute) ||
-            localPath.includes("..")
-          ) {
+          if (!isUnixAbsolute && !isWindowsAbsolute) {
+            res.statusCode = 403;
+            res.end("Invalid path");
+            return;
+          }
+
+          // Normalize the path first to resolve any encoded traversal sequences,
+          // then check for directory traversal attempts
+          const normalizedLocalPath = resolve(localPath);
+          // After resolve(), if ".." still appears, the path is trying to escape the root
+          if (normalizedLocalPath.includes("..")) {
             res.statusCode = 403;
             res.end("Invalid path");
             return;
@@ -83,10 +90,10 @@ const localFileServerPlugin = (): Plugin => {
             return;
           }
 
-          const fullPath = join(decodedLocalPath, requestPath);
+          const fullPath = join(normalizedLocalPath, requestPath);
 
           // Security: Normalize the path and verify it's still within the base directory
-          const normalizedBasePath = resolve(decodedLocalPath);
+          const normalizedBasePath = resolve(normalizedLocalPath);
           const normalizedFullPath = resolve(fullPath);
           // Ensure the full path is strictly within the base directory by checking
           // that it either equals the base path or starts with base path + separator
