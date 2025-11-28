@@ -62,7 +62,6 @@ const getLocalProxyUrl = (localPath: string, filePath: string): string => {
  * @param {string} filePath - The path to the file/resource to fetch, relative to the base address.
  * @returns {string} The URL to use for fetching the resource.
  */
-// Get the actual URL to fetch from (either direct HTTP or through proxy)
 const getFetchUrl = (baseAddress: string, filePath: string): string => {
   if (isLocalPath(baseAddress)) {
     return getLocalProxyUrl(baseAddress, filePath);
