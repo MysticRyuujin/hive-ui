@@ -199,11 +199,10 @@ const localFileServerPlugin = (): Plugin => {
                   const stream = createReadStream(normalizedFullPath, { start, end });
                   stream.on("error", (err) => {
                     console.error("Stream error during range request:", err.message);
+                    stream.destroy();
                     if (!res.headersSent) {
                       res.statusCode = 500;
                       res.end("Internal server error");
-                    } else {
-                      stream.destroy();
                     }
                   });
                   stream.pipe(res);
@@ -228,13 +227,11 @@ const localFileServerPlugin = (): Plugin => {
             res.setHeader("Content-Length", fileSize.toString());
             const stream = createReadStream(normalizedFullPath);
             stream.on("error", (err) => {
-              console.error(err);
+              console.error("Stream error:", err.message);
+              stream.destroy();
               if (!res.headersSent) {
                 res.statusCode = 500;
                 res.end("Internal server error");
-              } else {
-                // If headers already sent, just destroy the stream and let client detect incomplete response
-                stream.destroy();
               }
             });
             stream.on("end", () => {

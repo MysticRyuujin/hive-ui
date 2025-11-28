@@ -132,8 +132,7 @@ export const getLogFileUrl = (
 ): string => {
   // Security: Reject paths containing null bytes to prevent path truncation attacks
   if (logFile.includes("\0")) {
-    // Return empty string to indicate invalid path - caller should handle this case
-    return "";
+    throw new Error("Invalid log file path: null byte detected");
   }
 
   // Handle HTTP and local paths differently:
