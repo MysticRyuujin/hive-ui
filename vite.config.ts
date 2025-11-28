@@ -56,14 +56,16 @@ const localFileServerPlugin = (): Plugin => {
           // Check for Unix absolute paths (/) and Windows absolute paths (C:\, D:\, etc.)
           const isUnixAbsolute = localPath.startsWith("/");
           const isWindowsAbsolute = /^[a-zA-Z]:[/\\]/.test(localPath);
-          if (
-            (!isUnixAbsolute && !isWindowsAbsolute) ||
-            localPath.includes("..")
-          ) {
+          if (!isUnixAbsolute && !isWindowsAbsolute) {
             res.statusCode = 403;
             res.end("Invalid path");
             return;
           }
+
+          // Normalize the path to resolve any traversal sequences
+          // The path containment check later (using normalizedBasePath + sep)
+          // ensures the final resolved path stays within the base directory
+          const normalizedLocalPath = resolve(localPath);
 
           // Remove the query string from the request path
           let requestPath = url.pathname.replace("/api/local", "");
@@ -83,18 +85,17 @@ const localFileServerPlugin = (): Plugin => {
             return;
           }
 
-          const fullPath = join(localPath, requestPath);
+          const fullPath = join(normalizedLocalPath, requestPath);
 
           // Security: Normalize the path and verify it's still within the base directory
-          const normalizedBasePath = resolve(localPath);
           const normalizedFullPath = resolve(fullPath);
           // Ensure the full path is strictly within the base directory by checking
           // that it either equals the base path or starts with base path + separator
           // This prevents access to sibling directories (e.g., /home/user/logsbackup
           // when base is /home/user/logs)
-          const basePathWithSeparator = normalizedBasePath + sep;
+          const basePathWithSeparator = normalizedLocalPath + sep;
           if (
-            normalizedFullPath !== normalizedBasePath &&
+            normalizedFullPath !== normalizedLocalPath &&
             !normalizedFullPath.startsWith(basePathWithSeparator)
           ) {
             res.statusCode = 403;
