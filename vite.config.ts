@@ -53,8 +53,11 @@ const localFileServerPlugin = (): Plugin => {
           const decodedLocalPath = decodeURIComponent(localPath);
 
           // Security: Only allow absolute paths and prevent directory traversal
+          // Check for Unix absolute paths (/) and Windows absolute paths (C:, D:, etc.)
+          const isUnixAbsolute = decodedLocalPath.startsWith("/");
+          const isWindowsAbsolute = /^[a-zA-Z]:/.test(decodedLocalPath);
           if (
-            !decodedLocalPath.startsWith("/") ||
+            (!isUnixAbsolute && !isWindowsAbsolute) ||
             decodedLocalPath.includes("..")
           ) {
             res.statusCode = 403;
