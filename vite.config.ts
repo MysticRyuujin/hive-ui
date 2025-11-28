@@ -204,12 +204,12 @@ const localFileServerPlugin = (): Plugin => {
                   res.statusCode = 500;
                   res.end("Filesystem error");
               }
-            } else {
-              res.statusCode = 500;
-              res.end("Filesystem error");
-            }
+            console.error("File not found error:", err && err.message ? err.message : String(err));
+            res.statusCode = 404;
+            res.end("File not found");
+          }
         } catch (err) {
-          console.error(err);
+          console.error("Internal server error:", err && err.message ? err.message : String(err));
           res.statusCode = 500;
           res.end("Internal server error");
         }
