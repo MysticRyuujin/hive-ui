@@ -18,8 +18,13 @@ const getLocalProxyUrl = (localPath: string, filePath: string): string => {
   const cleanPath = localPath.replace(/^local:\/\//, "");
   // Encode the local path as a query parameter
   const encodedPath = encodeURIComponent(cleanPath);
+  // Encode each path segment to handle special characters like ?, #, &, etc.
+  const encodedFilePath = filePath
+    .split('/')
+    .map(segment => segment ? encodeURIComponent(segment) : '')
+    .join('/');
   // Build the proxy URL
-  return `/api/local${filePath}?path=${encodedPath}&ts=${getTimestamp()}`;
+  return `/api/local${encodedFilePath}?path=${encodedPath}&ts=${getTimestamp()}`;
 };
 
 // Get the actual URL to fetch from (either direct HTTP or through proxy)

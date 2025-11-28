@@ -4,7 +4,7 @@ import tailwindcssPostcss from "@tailwindcss/postcss";
 import autoprefixer from "autoprefixer";
 import { execSync } from "child_process";
 import { readFileSync, statSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import type { Plugin } from "vite";
 
 // Get git info
@@ -68,7 +68,24 @@ const localFileServerPlugin = (): Plugin => {
           if (requestPath.startsWith("/")) {
             requestPath = requestPath.substring(1);
           }
+
+          // Security: Validate requestPath to prevent directory traversal
+          if (requestPath.includes("..")) {
+            res.statusCode = 403;
+            res.end("Invalid path");
+            return;
+          }
+
           const fullPath = join(decodedLocalPath, requestPath);
+
+          // Security: Normalize the path and verify it's still within the base directory
+          const normalizedBasePath = resolve(decodedLocalPath);
+          const normalizedFullPath = resolve(fullPath);
+          if (!normalizedFullPath.startsWith(normalizedBasePath)) {
+            res.statusCode = 403;
+            res.end("Invalid path");
+            return;
+          }
 
           // Check if file exists
           try {
