@@ -2,18 +2,15 @@ import { Directory, TestRun, TestDetail } from "../types";
 
 const getTimestamp = () => new Date().getTime();
 
-// Check if an address is a local path (starts with local:// or is an absolute path)
+// Check if an address is a local path (starts with local://, is an absolute path, or is a relative path)
 const isLocalPath = (address: string): boolean => {
-  // Detects local://, Unix absolute paths (/...), and Windows absolute paths (C:\..., C:/...)
+  // Detects local://, Unix absolute paths (/...), Windows absolute paths (C:\..., C:/...), and relative paths (./..., ../..., logs)
   return (
     address.startsWith("local://") ||
-    (!address.startsWith("http://") &&
+    (
+      !address.startsWith("http://") &&
       !address.startsWith("https://") &&
-      !address.startsWith("//") &&
-      (
-        address.startsWith("/") || // Unix absolute path
-        /^[a-zA-Z]:[\\/]/.test(address) // Windows absolute path (C:\ or C:/)
-      )
+      !address.startsWith("//")
     )
   );
 };
@@ -30,7 +27,7 @@ const getLocalProxyUrl = (localPath: string, filePath: string): string => {
     .map(segment => segment ? encodeURIComponent(segment) : '')
     .join('/');
   // Build the proxy URL
-  return `/api/local${encodedFilePath}?path=${encodedPath}&ts=${getTimestamp()}`;
+  return `/api/local${encodedFilePath}?path=${encodedPath}`;
 };
 
 // Get the actual URL to fetch from (either direct HTTP or through proxy)
