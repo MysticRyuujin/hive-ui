@@ -186,8 +186,13 @@ const localFileServerPlugin = (): Plugin => {
             const stream = createReadStream(fullPath);
             stream.on("error", (err) => {
               console.error(err);
-              res.statusCode = 500;
-              res.end("Internal server error");
+              if (!res.headersSent) {
+                res.statusCode = 500;
+                res.end("Internal server error");
+              } else {
+                // If headers already sent, just destroy the stream and let client detect incomplete response
+                stream.destroy();
+              }
             });
             stream.pipe(res);
           } catch (err) {
@@ -208,9 +213,9 @@ const localFileServerPlugin = (): Plugin => {
                   res.end("Filesystem error");
               }
             } else {
-              console.error("File not found error:", err && err.message ? err.message : String(err));
-              res.statusCode = 404;
-              res.end("File not found");
+              console.error("Unhandled filesystem error:", err && err.message ? err.message : String(err));
+              res.statusCode = 500;
+              res.end("Filesystem error");
             }
           }
         } catch (err) {
