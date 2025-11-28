@@ -148,17 +148,20 @@ const localFileServerPlugin = (): Plugin => {
                   // Valid range - serve partial content
                   const chunkSize = end - start + 1;
                   const fd = openSync(fullPath, "r");
-                  const content = Buffer.alloc(chunkSize);
-                  readSync(fd, content, 0, chunkSize, start);
-                  closeSync(fd);
+                  try {
+                    const content = Buffer.alloc(chunkSize);
+                    readSync(fd, content, 0, chunkSize, start);
 
-                  res.statusCode = 206; // Partial Content
-                  res.setHeader(
-                    "Content-Range",
-                    `bytes ${start}-${end}/${fileSize}`
-                  );
-                  res.setHeader("Content-Length", chunkSize.toString());
-                  res.end(content);
+                    res.statusCode = 206; // Partial Content
+                    res.setHeader(
+                      "Content-Range",
+                      `bytes ${start}-${end}/${fileSize}`
+                    );
+                    res.setHeader("Content-Length", chunkSize.toString());
+                    res.end(content);
+                  } finally {
+                    closeSync(fd);
+                  }
                   return;
                 } else {
                   // Invalid range - return 416 Range Not Satisfiable per RFC 7233
