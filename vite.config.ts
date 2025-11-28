@@ -17,6 +17,14 @@ const getGitVersion = () => {
   }
 };
 
+// Content type mapping for file extensions
+const contentTypeMap: Record<string, string> = {
+  json: "application/json",
+  jsonl: "application/x-ndjson",
+  txt: "text/plain",
+  log: "text/plain",
+};
+
 // Plugin to serve local file system paths
 const localFileServerPlugin = (): Plugin => {
   return {
@@ -117,12 +125,6 @@ const localFileServerPlugin = (): Plugin => {
             const ext = extname(fullPath).slice(1).toLowerCase();
 
             // Set appropriate content type
-            const contentTypeMap: Record<string, string> = {
-              json: "application/json",
-              jsonl: "application/x-ndjson",
-              txt: "text/plain",
-              log: "text/plain",
-            };
             const contentType = contentTypeMap[ext] || "application/octet-stream";
 
             res.setHeader("Content-Type", contentType);
