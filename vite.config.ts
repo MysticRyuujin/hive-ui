@@ -57,6 +57,13 @@ const localFileServerPlugin = (): Plugin => {
             return;
           }
 
+          // Security: Reject paths containing null bytes to prevent path truncation attacks
+          if (localPath.includes('\0')) {
+            res.statusCode = 400;
+            res.end("Invalid path");
+            return;
+          }
+
           // Use localPath directly - it's already decoded
 
           // Security: Only allow absolute paths and prevent directory traversal
