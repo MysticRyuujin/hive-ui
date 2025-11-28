@@ -63,7 +63,11 @@ const localFileServerPlugin = (): Plugin => {
           }
 
           // Remove the query string from the request path
-          const requestPath = url.pathname.replace("/api/local", "");
+          let requestPath = url.pathname.replace("/api/local", "");
+          // Remove leading slash to make it relative (prevents absolute path from overriding base directory)
+          if (requestPath.startsWith("/")) {
+            requestPath = requestPath.substring(1);
+          }
           const fullPath = join(decodedLocalPath, requestPath);
 
           // Check if file exists
