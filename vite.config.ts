@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcssPostcss from "@tailwindcss/postcss";
 import autoprefixer from "autoprefixer";
 import { execSync } from "child_process";
-import { readFileSync, statSync } from "fs";
+import { closeSync, openSync, readFileSync, readSync, statSync } from "fs";
 import { extname, join, resolve, sep } from "path";
 import type { Plugin } from "vite";
 
@@ -63,7 +63,7 @@ const localFileServerPlugin = (): Plugin => {
           }
 
           // Normalize the path to resolve any traversal sequences
-          // The path containment check later (using normalizedBasePath + sep)
+          // The path containment check later (using normalizedLocalPath + sep)
           // ensures the final resolved path stays within the base directory
           const normalizedLocalPath = resolve(localPath);
 
@@ -148,16 +148,21 @@ const localFileServerPlugin = (): Plugin => {
                 if (start >= 0 && start <= end && start < fileSize) {
                   // Valid range - serve partial content
                   const chunkSize = end - start + 1;
-                  const fullContent = readFileSync(fullPath);
-                  const content = fullContent.subarray(start, end + 1);
+                  const fd = openSync(fullPath, "r");
+                  try {
+                    const content = Buffer.alloc(chunkSize);
+                    readSync(fd, content, 0, chunkSize, start);
 
-                  res.statusCode = 206; // Partial Content
-                  res.setHeader(
-                    "Content-Range",
-                    `bytes ${start}-${end}/${fileSize}`
-                  );
-                  res.setHeader("Content-Length", chunkSize.toString());
-                  res.end(content);
+                    res.statusCode = 206; // Partial Content
+                    res.setHeader(
+                      "Content-Range",
+                      `bytes ${start}-${end}/${fileSize}`
+                    );
+                    res.setHeader("Content-Length", chunkSize.toString());
+                    res.end(content);
+                  } finally {
+                    closeSync(fd);
+                  }
                   return;
                 } else {
                   // Invalid range - return 416 Range Not Satisfiable per RFC 7233
