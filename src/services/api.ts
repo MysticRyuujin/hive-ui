@@ -28,9 +28,10 @@ const getLocalProxyUrl = (localPath: string, filePath: string): string => {
   // Encode the local path as a query parameter
   const encodedPath = encodeURIComponent(cleanPath);
   // Encode each path segment to handle special characters like ?, #, &, etc.
+  // Use encodeURIComponent for all segments to preserve empty segments (consecutive slashes)
   const encodedFilePath = filePath
     .split('/')
-    .map(segment => segment ? encodeURIComponent(segment) : '')
+    .map(segment => encodeURIComponent(segment))
     .join('/');
   // Build the proxy URL
   return `/api/local${encodedFilePath}?path=${encodedPath}`;
@@ -50,9 +51,10 @@ const getFetchUrl = (baseAddress: string, filePath: string): string => {
     return getLocalProxyUrl(baseAddress, filePath);
   }
   // Encode each path segment to handle special characters like spaces
+  // Use encodeURIComponent for all segments to preserve empty segments (consecutive slashes)
   const encodedPath = filePath
     .split('/')
-    .map(segment => segment ? encodeURIComponent(segment) : '')
+    .map(segment => encodeURIComponent(segment))
     .join('/');
   return `${baseAddress}${encodedPath}?ts=${getTimestamp()}`;
 };
