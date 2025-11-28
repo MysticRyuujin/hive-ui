@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcssPostcss from "@tailwindcss/postcss";
 import autoprefixer from "autoprefixer";
 import { execSync } from "child_process";
-import { closeSync, createReadStream, openSync, readSync, statSync } from "fs";
+import { createReadStream, statSync } from "fs";
 import { extname, join, resolve, sep } from "path";
 import type { Plugin } from "vite";
 
@@ -146,6 +146,16 @@ const localFileServerPlugin = (): Plugin => {
             }
 
             const fileSize = stats.size;
+
+            // Handle empty files - range requests don't make sense for empty files
+            if (fileSize === 0 && req.headers.range) {
+              // Per RFC 7233, range requests on empty files are not satisfiable
+              res.statusCode = 416;
+              res.setHeader("Content-Range", "bytes */0");
+              res.end("Range Not Satisfiable");
+              return;
+            }
+
             const ext = extname(normalizedFullPath).slice(1).toLowerCase();
 
             // Set appropriate content type
@@ -175,23 +185,27 @@ const localFileServerPlugin = (): Plugin => {
 
                 // Validate range according to RFC 7233
                 if (start >= 0 && start <= end && start < fileSize) {
-                  // Valid range - serve partial content
+                  // Valid range - serve partial content using streaming
                   const chunkSize = end - start + 1;
-                  const fd = openSync(normalizedFullPath, "r");
-                  try {
-                    const content = Buffer.alloc(chunkSize);
-                    readSync(fd, content, 0, chunkSize, start);
 
-                    res.statusCode = 206; // Partial Content
-                    res.setHeader(
-                      "Content-Range",
-                      `bytes ${start}-${end}/${fileSize}`
-                    );
-                    res.setHeader("Content-Length", chunkSize.toString());
-                    res.end(content);
-                  } finally {
-                    closeSync(fd);
-                  }
+                  res.statusCode = 206; // Partial Content
+                  res.setHeader(
+                    "Content-Range",
+                    `bytes ${start}-${end}/${fileSize}`
+                  );
+                  res.setHeader("Content-Length", chunkSize.toString());
+
+                  // Use streaming for memory efficiency
+                  const stream = createReadStream(normalizedFullPath, { start, end });
+                  stream.on("error", (err) => {
+                    console.error("Stream error during range request:", err.message);
+                    stream.destroy();
+                    if (!res.headersSent) {
+                      res.statusCode = 500;
+                      res.end("Internal server error");
+                    }
+                  });
+                  stream.pipe(res);
                   return;
                 } else {
                   // Invalid range - return 416 Range Not Satisfiable per RFC 7233
@@ -213,17 +227,15 @@ const localFileServerPlugin = (): Plugin => {
             res.setHeader("Content-Length", fileSize.toString());
             const stream = createReadStream(normalizedFullPath);
             stream.on("error", (err) => {
-              console.error(err);
+              console.error("Stream error:", err.message);
+              stream.destroy();
               if (!res.headersSent) {
                 res.statusCode = 500;
                 res.end("Internal server error");
-              } else {
-                // If headers already sent, just destroy the stream and let client detect incomplete response
-                stream.destroy();
               }
             });
             stream.on("end", () => {
-              console.log("Successfully served file:", normalizedFullPath);
+              console.log("Successfully served local file");
             });
             stream.pipe(res);
           } catch (err) {
