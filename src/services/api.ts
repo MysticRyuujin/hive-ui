@@ -8,6 +8,7 @@ const isLocalPath = (address: string): boolean => {
     address.startsWith("local://") ||
     (!address.startsWith("http://") &&
       !address.startsWith("https://") &&
+      !address.startsWith("//") &&
       address.startsWith("/"))
   );
 };

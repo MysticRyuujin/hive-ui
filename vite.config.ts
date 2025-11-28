@@ -119,12 +119,18 @@ const localFileServerPlugin = (): Plugin => {
               const rangeMatch = rangeHeader.match(/bytes=(\d+)-(\d*)/);
               if (rangeMatch) {
                 const start = parseInt(rangeMatch[1], 10);
-                const end = rangeMatch[2]
+                let end = rangeMatch[2]
                   ? parseInt(rangeMatch[2], 10)
                   : fileSize - 1;
 
+                // Clamp end to file size according to RFC 7233
+                // If end is beyond file size, serve from start to end of file
+                if (end >= fileSize) {
+                  end = fileSize - 1;
+                }
+
                 // Validate range according to RFC 7233
-                if (start >= 0 && end < fileSize && start <= end) {
+                if (start >= 0 && start <= end && start < fileSize) {
                   // Valid range - serve partial content
                   const chunkSize = end - start + 1;
                   const fullContent = readFileSync(fullPath);
