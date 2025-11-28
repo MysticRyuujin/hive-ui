@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcssPostcss from "@tailwindcss/postcss";
 import autoprefixer from "autoprefixer";
 import { execSync } from "child_process";
-import { closeSync, openSync, readFileSync, readSync, statSync } from "fs";
+import { closeSync, createReadStream, openSync, readSync, statSync } from "fs";
 import { extname, join, resolve, sep } from "path";
 import type { Plugin } from "vite";
 
@@ -176,7 +176,7 @@ const localFileServerPlugin = (): Plugin => {
 
             // Serve full file if no range request
             res.setHeader("Content-Length", fileSize.toString());
-            const stream = require("fs").createReadStream(fullPath);
+            const stream = createReadStream(fullPath);
             stream.on("error", (err) => {
               console.error(err);
               res.statusCode = 500;
