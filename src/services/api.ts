@@ -27,7 +27,12 @@ const getFetchUrl = (baseAddress: string, filePath: string): string => {
   if (isLocalPath(baseAddress)) {
     return getLocalProxyUrl(baseAddress, filePath);
   }
-  return `${baseAddress}${filePath}?ts=${getTimestamp()}`;
+  // Encode each path segment to handle special characters like spaces
+  const encodedPath = filePath
+    .split('/')
+    .map(segment => segment ? encodeURIComponent(segment) : '')
+    .join('/');
+  return `${baseAddress}${encodedPath}?ts=${getTimestamp()}`;
 };
 
 export const fetchDirectories = async (): Promise<Directory[]> => {
