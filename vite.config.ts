@@ -97,6 +97,13 @@ const localFileServerPlugin = (): Plugin => {
           // Normalize path separators for cross-platform compatibility
           requestPath = requestPath.split("/").join(sep);
 
+          // Security: Reject paths containing null bytes to prevent path truncation attacks
+          if (requestPath.includes("\0")) {
+            res.statusCode = 400;
+            res.end("Invalid path");
+            return;
+          }
+
           // URL pathname is already decoded; avoid double-decoding
           const fullPath = join(normalizedLocalPath, requestPath);
 
@@ -118,7 +125,7 @@ const localFileServerPlugin = (): Plugin => {
 
           // Check if file exists
           try {
-            const stats = statSync(fullPath);
+            const stats = statSync(normalizedFullPath);
 
             if (stats.isDirectory()) {
               res.statusCode = 403;
@@ -127,7 +134,7 @@ const localFileServerPlugin = (): Plugin => {
             }
 
             const fileSize = stats.size;
-            const ext = extname(fullPath).slice(1).toLowerCase();
+            const ext = extname(normalizedFullPath).slice(1).toLowerCase();
 
             // Set appropriate content type
             const contentType = contentTypeMap[ext] || "application/octet-stream";
@@ -156,7 +163,7 @@ const localFileServerPlugin = (): Plugin => {
                 if (start >= 0 && start <= end && start < fileSize) {
                   // Valid range - serve partial content
                   const chunkSize = end - start + 1;
-                  const fd = openSync(fullPath, "r");
+                  const fd = openSync(normalizedFullPath, "r");
                   try {
                     const content = Buffer.alloc(chunkSize);
                     readSync(fd, content, 0, chunkSize, start);
@@ -190,7 +197,7 @@ const localFileServerPlugin = (): Plugin => {
 
             // Serve full file if no range request
             res.setHeader("Content-Length", fileSize.toString());
-            const stream = createReadStream(fullPath);
+            const stream = createReadStream(normalizedFullPath);
             stream.on("error", (err) => {
               console.error(err);
               if (!res.headersSent) {
@@ -200,6 +207,9 @@ const localFileServerPlugin = (): Plugin => {
                 // If headers already sent, just destroy the stream and let client detect incomplete response
                 stream.destroy();
               }
+            });
+            stream.on("end", () => {
+              console.log("Successfully served file:", normalizedFullPath);
             });
             stream.pipe(res);
           } catch (err) {

@@ -32,11 +32,11 @@ const getLocalProxyUrl = (localPath: string, filePath: string): string => {
   // This normalizes the encoding of all special characters within each segment
   // Use encodeURIComponent for all segments to preserve empty segments (consecutive slashes)
   const encodedFilePath = filePath
-    .split('/')
-    .map(segment => encodeURIComponent(segment))
-    .join('/');
-  // Build the proxy URL
-  return `/api/local${encodedFilePath}?path=${encodedPath}`;
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  // Build the proxy URL with timestamp for cache invalidation during development
+  return `/api/local${encodedFilePath}?path=${encodedPath}&ts=${getTimestamp()}`;
 };
 
 /**
@@ -55,9 +55,9 @@ const getFetchUrl = (baseAddress: string, filePath: string): string => {
   // Encode each path segment to handle special characters like spaces
   // Use encodeURIComponent for all segments to preserve empty segments (consecutive slashes)
   const encodedPath = filePath
-    .split('/')
-    .map(segment => encodeURIComponent(segment))
-    .join('/');
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
   return `${baseAddress}${encodedPath}?ts=${getTimestamp()}`;
 };
 
