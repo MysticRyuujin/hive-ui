@@ -51,7 +51,6 @@ const localFileServerPlugin = (): Plugin => {
 
           // Use localPath directly - it's already decoded
 
-
           // Security: Only allow absolute paths and prevent directory traversal
           // Check for Unix absolute paths (/) and Windows absolute paths (C:\, D:\, etc.)
           const isUnixAbsolute = localPath.startsWith("/");
@@ -73,6 +72,8 @@ const localFileServerPlugin = (): Plugin => {
           if (requestPath.startsWith("/")) {
             requestPath = requestPath.substring(1);
           }
+          // Normalize path separators for cross-platform compatibility
+          requestPath = requestPath.split("/").join(sep);
 
           // The URL constructor already decodes pathname, so no need to decode again.
           // If the client sends encoded segments, ensure only one decode happens.
