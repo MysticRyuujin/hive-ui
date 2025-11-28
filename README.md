@@ -29,20 +29,23 @@ Hive UI provides a user-friendly interface for viewing and analyzing test result
 ### Installation
 
 1. Clone the repository
-```bash
-git clone https://github.com/ethpandaops/hive-ui.git
-cd hive-ui
-```
+
+    ```bash
+    git clone https://github.com/ethpandaops/hive-ui.git
+    cd hive-ui
+    ```
 
 2. Install dependencies
-```bash
-make setup
-```
+
+    ```bash
+    make setup
+    ```
 
 3. Start the development server
-```bash
-make dev
-```
+
+    ```bash
+    make dev
+    ```
 
 4. Open your browser and navigate to `http://localhost:5173`
 
@@ -72,9 +75,37 @@ The following example shows the format of the `discovery.json` file:
 The address should be the directory where the Hive results are stored.
 
 The UI expects the following files to be there:
+
 - `listing.jsonl` file which contains a list of recent test results separated by newlines.
 - `results/` directory that contains more information about specific test results.
 
+### Local File System Support
+
+You can also point to local file system paths for development. Use the `local://` prefix followed by an absolute path:
+
+```json
+[
+  {
+    "name": "local-hive",
+    "address": "local:///path/to/hive/workspace/logs"
+  }
+]
+```
+
+Or simply use an absolute path (without `local://` prefix):
+
+```json
+[
+  {
+    "name": "local-hive",
+    "address": "/path/to/hive/workspace/logs"
+  }
+]
+```
+
+**Note:** Local file paths only work when running the development server (`make dev`). The Vite dev server includes a proxy that serves local files securely.
+
+⚠️ **Security Warning:** The development server allows access to any files within the specified directory and its subdirectories. **Do not expose the development server to untrusted networks or users, as this could allow unauthorized access to sensitive files on your system.** Only run the dev server in trusted environments with trusted users.
 
 ## Contributing
 

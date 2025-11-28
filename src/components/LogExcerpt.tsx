@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchDirectories } from '../services/api';
+import { fetchDirectories, getLogFileUrl } from '../services/api';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-log';
 import { usePrismTheme } from './PrismTheme';
@@ -48,8 +48,8 @@ const LogExcerpt: React.FC<LogExcerptProps> = ({
         setLoading(true);
         setError(null);
 
-        // Construct the URL to fetch the log file
-        const logFilePath = `${discoveryAddress}/results/${encodeURIComponent(logFile)}`;
+        // Construct the URL to fetch the log file (handles both HTTP and local paths)
+        const logFilePath = getLogFileUrl(discoveryAddress, logFile);
 
         // Use range request for the specified byte range
         const headers: HeadersInit = {

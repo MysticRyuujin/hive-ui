@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchDirectories } from '../services/api';
+import { fetchDirectories, getLogFileUrl } from '../services/api';
 import Prism from 'prismjs';
 // Import Prism components but no themes - we'll handle themes manually
 import 'prismjs/components/prism-bash';
@@ -94,8 +94,8 @@ const LogViewer = () => {
         setLoading(true);
         setError(null);
 
-        // Construct the URL to fetch the log file
-        const logFilePath = `${discoveryAddress}/results/${decodeURIComponent(logFile)}`;
+        // Construct the URL to fetch the log file (handles both HTTP and local paths)
+        const logFilePath = getLogFileUrl(discoveryAddress, logFile);
 
         // Use range request if both begin and end bytes are provided
         const headers: HeadersInit = {};
@@ -110,7 +110,6 @@ const LogViewer = () => {
         }
 
         const text = await response.text();
-        console.log(`[DEBUG] Log file fetched, length: ${text.length}`);
         setLogContent(text);
 
         // Calculate line count and file size
