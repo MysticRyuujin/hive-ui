@@ -2,9 +2,9 @@ import { Directory, TestRun, TestDetail } from "../types";
 
 const getTimestamp = () => new Date().getTime();
 
-// Check if an address is a local path (starts with local://, is an absolute path, or is a relative path)
+// Check if an address is a local path (starts with local://, or is not an HTTP(S) URL)
 const isLocalPath = (address: string): boolean => {
-  // Detects local://, Unix absolute paths (/...), Windows absolute paths (C:\..., C:/...), and relative paths (./..., ../..., logs)
+  // Returns true for local:// addresses, or any address not starting with http://, https://, or //
   return (
     address.startsWith("local://") ||
     (

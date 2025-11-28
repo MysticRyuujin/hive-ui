@@ -65,7 +65,7 @@ const localFileServerPlugin = (): Plugin => {
           const isWindowsAbsolute = /^[a-zA-Z]:[/\\]/.test(localPath);
           if (!isUnixAbsolute && !isWindowsAbsolute) {
             res.statusCode = 403;
-            res.end("Invalid path");
+            res.end("Path must be absolute");
             return;
           }
 
@@ -83,12 +83,7 @@ const localFileServerPlugin = (): Plugin => {
           // Normalize path separators for cross-platform compatibility
           requestPath = requestPath.split("/").join(sep);
 
-          // The URL constructor already decodes pathname, so no need to decode again.
-          // If the client sends encoded segments, ensure only one decode happens.
-          // Remove explicit decodeURIComponent to avoid double-decoding.
-
-          // The actual security boundary is enforced by the path normalization and containment check below.
-
+          // URL pathname is already decoded; avoid double-decoding
           const fullPath = join(normalizedLocalPath, requestPath);
 
           // Security: Normalize the path and verify it's still within the base directory
@@ -129,6 +124,7 @@ const localFileServerPlugin = (): Plugin => {
             // Handle range requests
             const rangeHeader = req.headers.range;
             if (rangeHeader) {
+              // Only single-range requests are supported; multi-range requests will return 416 (RFC 7233)
               const rangeMatch = rangeHeader.match(/bytes=(\d+)-(\d*)/);
               if (rangeMatch) {
                 const start = parseInt(rangeMatch[1], 10);
@@ -204,9 +200,11 @@ const localFileServerPlugin = (): Plugin => {
                   res.statusCode = 500;
                   res.end("Filesystem error");
               }
-            console.error("File not found error:", err && err.message ? err.message : String(err));
-            res.statusCode = 404;
-            res.end("File not found");
+            } else {
+              console.error("File not found error:", err && err.message ? err.message : String(err));
+              res.statusCode = 404;
+              res.end("File not found");
+            }
           }
         } catch (err) {
           console.error("Internal server error:", err && err.message ? err.message : String(err));

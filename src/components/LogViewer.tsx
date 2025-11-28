@@ -95,7 +95,7 @@ const LogViewer = () => {
         setError(null);
 
         // Construct the URL to fetch the log file (handles both HTTP and local paths)
-        const logFilePath = getLogFileUrl(discoveryAddress, decodeURIComponent(logFile));
+        const logFilePath = getLogFileUrl(discoveryAddress, logFile);
 
         // Use range request if both begin and end bytes are provided
         const headers: HeadersInit = {};

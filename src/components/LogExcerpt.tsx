@@ -49,8 +49,7 @@ const LogExcerpt: React.FC<LogExcerptProps> = ({
         setError(null);
 
         // Construct the URL to fetch the log file (handles both HTTP and local paths)
-        const decodedLogFile = decodeURIComponent(logFile);
-        const logFilePath = getLogFileUrl(discoveryAddress, decodedLogFile);
+        const logFilePath = getLogFileUrl(discoveryAddress, logFile);
 
         // Use range request for the specified byte range
         const headers: HeadersInit = {
