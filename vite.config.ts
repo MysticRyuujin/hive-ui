@@ -74,6 +74,13 @@ const localFileServerPlugin = (): Plugin => {
           // Use localPath directly - it's already decoded
 
           // Security: Only allow absolute paths and prevent directory traversal
+          // Check for UNC paths (\\server\share or //server/share) and reject them explicitly
+          const isUNCPath = localPath.startsWith("\\\\") || localPath.startsWith("//");
+          if (isUNCPath) {
+            res.statusCode = 403;
+            res.end("UNC paths are not supported");
+            return;
+          }
           // Check for Unix absolute paths (/) and Windows absolute paths (C:\, D:\, etc.)
           const isUnixAbsolute = localPath.startsWith("/");
           const isWindowsAbsolute = /^[a-zA-Z]:[/\\]/.test(localPath);
@@ -146,8 +153,14 @@ const localFileServerPlugin = (): Plugin => {
             const rangeHeader = req.headers.range;
             if (rangeHeader) {
               // Only single-range requests are supported; multi-range requests will return 416 (RFC 7233)
+              if (rangeHeader.includes(',')) {
+                // Multi-range requests are not supported
+                res.statusCode = 416;
+                res.setHeader("Content-Range", `bytes */${fileSize}`);
+                res.end("Range Not Satisfiable");
+                return;
+              }
               const rangeMatch = rangeHeader.match(/bytes=(\d+)-(\d*)/);
-              if (rangeMatch) {
                 const start = parseInt(rangeMatch[1], 10);
                 let end = rangeMatch[2]
                   ? parseInt(rangeMatch[2], 10)
