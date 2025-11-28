@@ -69,6 +69,18 @@ const localFileServerPlugin = (): Plugin => {
             requestPath = requestPath.substring(1);
           }
 
+          // Decode URL-encoded characters in the path (e.g., %20 -> space)
+          // This is necessary because the pathname contains URL-encoded characters
+          // but filesystem paths need the actual characters
+          try {
+            requestPath = decodeURIComponent(requestPath);
+          } catch (err) {
+            // If decoding fails (malformed encoding), reject the request
+            res.statusCode = 400;
+            res.end("Invalid path encoding");
+            return;
+          }
+
           // Security: Validate requestPath to prevent directory traversal
           if (requestPath.includes("..")) {
             res.statusCode = 403;
@@ -81,7 +93,15 @@ const localFileServerPlugin = (): Plugin => {
           // Security: Normalize the path and verify it's still within the base directory
           const normalizedBasePath = resolve(decodedLocalPath);
           const normalizedFullPath = resolve(fullPath);
-          if (!normalizedFullPath.startsWith(normalizedBasePath)) {
+          // Ensure the full path is strictly within the base directory by checking
+          // that it either equals the base path or starts with base path + separator
+          // This prevents access to sibling directories (e.g., /home/user/logsbackup
+          // when base is /home/user/logs)
+          const basePathWithSeparator = normalizedBasePath + "/";
+          if (
+            normalizedFullPath !== normalizedBasePath &&
+            !normalizedFullPath.startsWith(basePathWithSeparator)
+          ) {
             res.statusCode = 403;
             res.end("Invalid path");
             return;
