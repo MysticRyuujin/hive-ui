@@ -161,6 +161,7 @@ const localFileServerPlugin = (): Plugin => {
                 return;
               }
               const rangeMatch = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+              if (rangeMatch) {
                 const start = parseInt(rangeMatch[1], 10);
                 let end = rangeMatch[2]
                   ? parseInt(rangeMatch[2], 10)
@@ -227,7 +228,7 @@ const localFileServerPlugin = (): Plugin => {
             stream.pipe(res);
           } catch (err) {
             console.error(err);
-            if (err && typeof err === "object" && "code" in err) {
+            if (err && typeof err === "object" && "code" in err && typeof err.code === "string") {
               switch (err.code) {
                 case "ENOENT":
                   res.statusCode = 404;

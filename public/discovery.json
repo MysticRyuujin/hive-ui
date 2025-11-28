@@ -1,5 +1,9 @@
 [
   {
+    "name": "local-hive",
+    "address": "local:///Users/chase/github/hive/workspace/logs"
+  },
+  {
     "name": "generic",
     "address": "https://hive.ethpandaops.io/generic/",
     "github_workflows": [
