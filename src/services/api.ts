@@ -111,5 +111,8 @@ export const getLogFileUrl = (
   discoveryAddr: string,
   logFile: string
 ): string => {
-  return getFetchUrl(discoveryAddr, `/results/${logFile}`);
+  // If logFile already contains a path (starts with a directory), use it as-is
+  // Otherwise, assume it's in the /results/ directory
+  const filePath = logFile.includes('/') ? `/${logFile}` : `/results/${logFile}`;
+  return getFetchUrl(discoveryAddr, filePath);
 };
