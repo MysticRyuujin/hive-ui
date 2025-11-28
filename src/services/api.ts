@@ -3,6 +3,7 @@ import { Directory, TestRun, TestDetail } from "../types";
 const getTimestamp = () => new Date().getTime();
 
 // Check if an address is a local path (starts with local://, or is not an HTTP(S) URL)
+// Note: Protocol-relative URLs (starting with //) are treated as remote URLs, not local paths
 const isLocalPath = (address: string): boolean => {
   // Returns true for local:// addresses, or any address not starting with http://, https://, or //
   return (
@@ -27,7 +28,8 @@ const getLocalProxyUrl = (localPath: string, filePath: string): string => {
   const cleanPath = localPath.replace(/^local:\/\//, "");
   // Encode the local path as a query parameter
   const encodedPath = encodeURIComponent(cleanPath);
-  // Encode each path segment to handle special characters like ?, #, &, etc.
+  // Encode each path segment to handle special characters (?, #, &, etc.)
+  // This normalizes the encoding of all special characters within each segment
   // Use encodeURIComponent for all segments to preserve empty segments (consecutive slashes)
   const encodedFilePath = filePath
     .split('/')

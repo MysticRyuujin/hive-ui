@@ -17,6 +17,13 @@ const getGitVersion = () => {
   }
 };
 
+// Helper function to safely extract error message
+const getErrorMessage = (err: unknown): string => {
+  return err && typeof err === "object" && "message" in err && typeof err.message === "string"
+    ? err.message
+    : String(err);
+};
+
 // Content type mapping for file extensions
 const contentTypeMap: Record<string, string> = {
   json: "application/json",
@@ -213,13 +220,13 @@ const localFileServerPlugin = (): Plugin => {
                   res.end("Filesystem error");
               }
             } else {
-              console.error("Unhandled filesystem error:", err && err.message ? err.message : String(err));
+              console.error("Unhandled filesystem error:", getErrorMessage(err));
               res.statusCode = 500;
               res.end("Filesystem error");
             }
           }
         } catch (err) {
-          console.error("Internal server error:", err && err.message ? err.message : String(err));
+          console.error("Internal server error:", getErrorMessage(err));
           res.statusCode = 500;
           res.end("Internal server error");
         }
