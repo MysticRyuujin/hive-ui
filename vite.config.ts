@@ -4,7 +4,7 @@ import tailwindcssPostcss from "@tailwindcss/postcss";
 import autoprefixer from "autoprefixer";
 import { execSync } from "child_process";
 import { readFileSync, statSync } from "fs";
-import { extname, join, resolve } from "path";
+import { extname, join, resolve, sep } from "path";
 import type { Plugin } from "vite";
 
 // Get git info
@@ -97,7 +97,7 @@ const localFileServerPlugin = (): Plugin => {
           // that it either equals the base path or starts with base path + separator
           // This prevents access to sibling directories (e.g., /home/user/logsbackup
           // when base is /home/user/logs)
-          const basePathWithSeparator = normalizedBasePath + "/";
+          const basePathWithSeparator = normalizedBasePath + sep;
           if (
             normalizedFullPath !== normalizedBasePath &&
             !normalizedFullPath.startsWith(basePathWithSeparator)
