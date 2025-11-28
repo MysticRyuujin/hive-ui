@@ -11,6 +11,10 @@ const getTimestamp = () => new Date().getTime();
 // Returns false for:
 //   - Any protocol URL (http://, https://, ftp://, file://, etc.)
 //   - Protocol-relative URLs (//example.com)
+// Note: While this function returns true for relative paths, the backend server
+// (vite.config.ts) only accepts absolute paths and will reject relative paths
+// with a 403 error. This function identifies what should be routed through the
+// local file proxy, but the server enforces stricter security requirements.
 const isLocalPath = (address: string): boolean => {
   // Explicit local:// prefix
   if (address.startsWith("local://")) {
@@ -153,7 +157,9 @@ export const getLogFileUrl = (
       // Remove leading slashes
       normalizedPath = normalizedPath.replace(/^\/+/, "");
       
-      // Security: Normalize path segments to prevent traversal attacks
+      // Security: Normalize path segments to prevent traversal attacks (client-side UX)
+      // Note: This client-side filtering is for user experience only. The server-side
+      // path validation in vite.config.ts is the actual security enforcement.
       // Split by /, filter out dangerous segments ('..', '.') and empty segments, then rejoin
       const segments = normalizedPath.split("/").filter(segment => {
         // Filter out empty segments, current directory, and parent directory references

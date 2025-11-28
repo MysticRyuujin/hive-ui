@@ -198,12 +198,14 @@ const localFileServerPlugin = (): Plugin => {
                   // Use streaming for memory efficiency
                   const stream = createReadStream(normalizedFullPath, { start, end });
                   stream.on("error", (err) => {
-                    console.error("Stream error during range request:", err.message);
-                    stream.destroy();
-                    if (!res.headersSent) {
+                    if (res.headersSent) {
+                      console.error("Stream error after headers sent - client may have received partial data:", err.message);
+                    } else {
+                      console.error("Stream error during range request:", err.message);
                       res.statusCode = 500;
                       res.end("Internal server error");
                     }
+                    stream.destroy();
                   });
                   stream.pipe(res);
                   return;
@@ -215,10 +217,9 @@ const localFileServerPlugin = (): Plugin => {
                   return;
                 }
               } else {
-                // Malformed range header - return 416
-                res.statusCode = 416;
-                res.setHeader("Content-Range", `bytes */${fileSize}`);
-                res.end("Range Not Satisfiable");
+                // Malformed range header - return 400 Bad Request per RFC 7233
+                res.statusCode = 400;
+                res.end("Bad Request: Malformed Range header");
                 return;
               }
             }
@@ -234,9 +235,7 @@ const localFileServerPlugin = (): Plugin => {
                 res.end("Internal server error");
               }
             });
-            stream.on("end", () => {
-              console.log("Successfully served local file");
-            });
+
             stream.pipe(res);
           } catch (err) {
             console.error(err);
