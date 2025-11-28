@@ -4,12 +4,17 @@ const getTimestamp = () => new Date().getTime();
 
 // Check if an address is a local path (starts with local:// or is an absolute path)
 const isLocalPath = (address: string): boolean => {
+  // Detects local://, Unix absolute paths (/...), and Windows absolute paths (C:\..., C:/...)
   return (
     address.startsWith("local://") ||
     (!address.startsWith("http://") &&
       !address.startsWith("https://") &&
       !address.startsWith("//") &&
-      address.startsWith("/"))
+      (
+        address.startsWith("/") || // Unix absolute path
+        /^[a-zA-Z]:[\\/]/.test(address) // Windows absolute path (C:\ or C:/)
+      )
+    )
   );
 };
 

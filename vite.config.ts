@@ -49,16 +49,16 @@ const localFileServerPlugin = (): Plugin => {
             return;
           }
 
-          // Decode the path
-          const decodedLocalPath = decodeURIComponent(localPath);
+          // Use localPath directly - it's already decoded
+
 
           // Security: Only allow absolute paths and prevent directory traversal
           // Check for Unix absolute paths (/) and Windows absolute paths (C:\, D:\, etc.)
-          const isUnixAbsolute = decodedLocalPath.startsWith("/");
-          const isWindowsAbsolute = /^[a-zA-Z]:[/\\]/.test(decodedLocalPath);
+          const isUnixAbsolute = localPath.startsWith("/");
+          const isWindowsAbsolute = /^[a-zA-Z]:[/\\]/.test(localPath);
           if (
             (!isUnixAbsolute && !isWindowsAbsolute) ||
-            decodedLocalPath.includes("..")
+            localPath.includes("..")
           ) {
             res.statusCode = 403;
             res.end("Invalid path");
@@ -72,17 +72,9 @@ const localFileServerPlugin = (): Plugin => {
             requestPath = requestPath.substring(1);
           }
 
-          // Decode URL-encoded characters in the path (e.g., %20 -> space)
-          // This is necessary because the pathname contains URL-encoded characters
-          // but filesystem paths need the actual characters
-          try {
-            requestPath = decodeURIComponent(requestPath);
-          } catch (err) {
-            // If decoding fails (malformed encoding), reject the request
-            res.statusCode = 400;
-            res.end("Invalid path encoding");
-            return;
-          }
+          // The URL constructor already decodes pathname, so no need to decode again.
+          // If the client sends encoded segments, ensure only one decode happens.
+          // Remove explicit decodeURIComponent to avoid double-decoding.
 
           // Security: Validate requestPath to prevent directory traversal
           if (requestPath.includes("..")) {
@@ -124,14 +116,13 @@ const localFileServerPlugin = (): Plugin => {
             const ext = extname(fullPath).slice(1).toLowerCase();
 
             // Set appropriate content type
-            const contentType =
-              ext === "json"
-                ? "application/json"
-                : ext === "jsonl"
-                ? "application/x-ndjson"
-                : ext === "txt" || ext === "log"
-                ? "text/plain"
-                : "application/octet-stream";
+            const contentTypeMap: Record<string, string> = {
+              json: "application/json",
+              jsonl: "application/x-ndjson",
+              txt: "text/plain",
+              log: "text/plain",
+            };
+            const contentType = contentTypeMap[ext] || "application/octet-stream";
 
             res.setHeader("Content-Type", contentType);
             res.setHeader("Accept-Ranges", "bytes");
@@ -188,10 +179,12 @@ const localFileServerPlugin = (): Plugin => {
             res.setHeader("Content-Length", content.length.toString());
             res.end(content);
           } catch (err) {
+            console.error(err);
             res.statusCode = 404;
             res.end("File not found");
           }
         } catch (err) {
+          console.error(err);
           res.statusCode = 500;
           res.end("Internal server error");
         }
