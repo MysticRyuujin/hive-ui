@@ -153,19 +153,8 @@ const localFileServerPlugin = (): Plugin => {
             const rangeHeader = req.headers.range;
             if (rangeHeader) {
               // Only single-range requests are supported; multi-range requests will return 416 (RFC 7233)
-              // Parse the range header to properly detect multi-range requests
-              // Format: bytes=start-end or bytes=start-end,start-end,...
-              if (rangeHeader.startsWith('bytes=')) {
-                const rangesPart = rangeHeader.slice(6); // Remove 'bytes=' prefix
-                const ranges = rangesPart.split(',').map(r => r.trim()).filter(Boolean);
-                if (ranges.length > 1) {
-                  // Multi-range requests are not supported
-                  res.statusCode = 416;
-                  res.setHeader("Content-Range", `bytes */${fileSize}`);
-                  res.end("Range Not Satisfiable");
-                  return;
-                }
-              }
+              // The regex only matches single-range format (bytes=start-end), so multi-range requests
+              // will fail to match and be handled in the else block below
               const rangeMatch = rangeHeader.match(/^bytes=(\d+)-(\d*)$/);
               if (rangeMatch) {
                 const start = parseInt(rangeMatch[1], 10);
@@ -227,9 +216,6 @@ const localFileServerPlugin = (): Plugin => {
                 // If headers already sent, just destroy the stream and let client detect incomplete response
                 stream.destroy();
               }
-            });
-            stream.on("end", () => {
-              console.log("Successfully served file:", fullPath);
             });
             stream.on("end", () => {
               console.log("Successfully served file:", normalizedFullPath);

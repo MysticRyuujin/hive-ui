@@ -126,20 +126,13 @@ export const getLogFileUrl = (
   discoveryAddr: string,
   logFile: string
 ): string => {
-  // Determine the file path:
-  // - If logFile starts with /, it's already an absolute path, use as-is
-  // - If logFile contains / (but doesn't start with it), it's a relative path
-  // - Otherwise, it's just a filename, so place it in /results/
-  let filePath: string;
-  if (logFile.startsWith('/')) {
-    // Already an absolute path
-    filePath = logFile;
-  } else if (logFile.includes('/')) {
-    // Relative path (e.g., "subdir/file.log")
-    filePath = `/${logFile}`;
-  } else {
-    // Just a filename (e.g., "file.log")
-    filePath = `/results/${logFile}`;
-  }
+  // All paths are treated as relative to the discovery address base.
+  // - If logFile contains a directory separator (/), treat it as a relative path
+  // - Otherwise, treat it as a filename and place it in /results/
+  // Note: Even if logFile starts with /, it's still treated as relative to the base
+  // (not as an absolute system path) since paths must be relative to the discovery address.
+  const filePath = logFile.includes('/') 
+    ? `/${logFile.replace(/^\/+/, '')}` // Remove leading slashes, then prepend one
+    : `/results/${logFile}`;
   return getFetchUrl(discoveryAddr, filePath);
 };

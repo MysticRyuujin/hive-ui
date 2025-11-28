@@ -74,6 +74,11 @@ The following example shows the format of the `discovery.json` file:
 
 The address should be the directory where the Hive results are stored.
 
+The UI expects the following files to be there:
+
+- `listing.jsonl` file which contains a list of recent test results separated by newlines.
+- `results/` directory that contains more information about specific test results.
+
 ### Local File System Support
 
 You can also point to local file system paths for development. Use the `local://` prefix followed by an absolute path:
@@ -101,10 +106,6 @@ Or simply use an absolute path (without `local://` prefix):
 **Note:** Local file paths only work when running the development server (`make dev`). The Vite dev server includes a proxy that serves local files securely.
 
 ⚠️ **Security Warning:** When enabling local file access in development mode, the browser can access any files within the specified directory path. **Do not expose the development server to untrusted networks or users.** Always restrict access to trusted users only, as exposing the dev server may allow unauthorized access to sensitive files on your system.
-The UI expects the following files to be there:
-
-- `listing.jsonl` file which contains a list of recent test results separated by newlines.
-- `results/` directory that contains more information about specific test results.
 
 ## Contributing
 
