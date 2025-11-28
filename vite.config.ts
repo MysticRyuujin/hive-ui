@@ -88,15 +88,14 @@ const localFileServerPlugin = (): Plugin => {
           const fullPath = join(normalizedLocalPath, requestPath);
 
           // Security: Normalize the path and verify it's still within the base directory
-          const normalizedBasePath = resolve(normalizedLocalPath);
           const normalizedFullPath = resolve(fullPath);
           // Ensure the full path is strictly within the base directory by checking
           // that it either equals the base path or starts with base path + separator
           // This prevents access to sibling directories (e.g., /home/user/logsbackup
           // when base is /home/user/logs)
-          const basePathWithSeparator = normalizedBasePath + sep;
+          const basePathWithSeparator = normalizedLocalPath + sep;
           if (
-            normalizedFullPath !== normalizedBasePath &&
+            normalizedFullPath !== normalizedLocalPath &&
             !normalizedFullPath.startsWith(basePathWithSeparator)
           ) {
             res.statusCode = 403;
