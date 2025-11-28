@@ -72,7 +72,11 @@ const getFetchUrl = (baseAddress: string, filePath: string): string => {
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
-  return `${baseAddress}${encodedPath}?ts=${getTimestamp()}`;
+  // Ensure proper path joining: remove trailing slash from baseAddress and leading slash from filePath
+  // then join with a single slash
+  const normalizedBase = baseAddress.replace(/\/+$/, ''); // Remove trailing slashes
+  const normalizedPath = encodedPath.replace(/^\/+/, ''); // Remove leading slashes
+  return `${normalizedBase}/${normalizedPath}?ts=${getTimestamp()}`;
 };
 
 export const fetchDirectories = async (): Promise<Directory[]> => {
@@ -125,13 +129,45 @@ export const getLogFileUrl = (
   discoveryAddr: string,
   logFile: string
 ): string => {
-  // All paths are treated as relative to the discovery address base.
-  // - If logFile contains a directory separator (/), treat it as a relative path
-  // - Otherwise, treat it as a filename and place it in /results/
-  // Note: Even if logFile starts with /, it's still treated as relative to the base
-  // (not as an absolute system path) since paths must be relative to the discovery address.
-  const filePath = logFile.includes('/') 
-    ? `/${logFile.replace(/^\/+/, '')}` // Remove leading slashes, then prepend one
-    : `/results/${logFile}`;
+  // Security: Reject paths containing null bytes to prevent path truncation attacks
+  if (logFile.includes("\0")) {
+    throw new Error("Invalid log file path");
+  }
+
+  // Handle HTTP and local paths differently:
+  // - For HTTP: logFile is always placed in /results/ (matches master branch behavior)
+  // - For local: logFile may already contain the correct path structure, so:
+  //   * If logFile contains a path separator, normalize and use it (relative to base)
+  //   * Otherwise, place it in /results/
+  const isLocal = isLocalPath(discoveryAddr);
+  let filePath: string;
+  
+  if (isLocal) {
+    // For local paths, respect the path structure in logFile but normalize it
+    if (logFile.includes('/')) {
+      // logFile contains a path - normalize it
+      // Remove leading slashes, then split and filter out dangerous sequences
+      let normalizedPath = logFile.replace(/^\/+/, '');
+      
+      // Security: Normalize path segments to prevent traversal attacks
+      // Split by /, filter out empty segments and '..' sequences, then rejoin
+      const segments = normalizedPath.split('/').filter(segment => {
+        // Filter out empty segments and parent directory references
+        return segment !== '' && segment !== '..';
+      });
+      
+      // Rejoin segments - this prevents ../ from escaping the base directory
+      normalizedPath = segments.join('/');
+      filePath = `/${normalizedPath}`;
+    } else {
+      // Just a filename - place it in /results/
+      filePath = `/results/${logFile}`;
+    }
+  } else {
+    // For HTTP paths, always place in /results/ (matches master branch behavior)
+    const normalizedLogFile = logFile.replace(/^\/+/, ''); // Remove any leading slashes
+    filePath = `/results/${normalizedLogFile}`;
+  }
+  
   return getFetchUrl(discoveryAddr, filePath);
 };

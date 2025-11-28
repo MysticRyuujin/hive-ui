@@ -74,19 +74,24 @@ const localFileServerPlugin = (): Plugin => {
           // Use localPath directly - it's already decoded
 
           // Security: Only allow absolute paths and prevent directory traversal
-          // Check for UNC paths (\\server\share or //server/share) and reject them explicitly
-          const isUNCPath = localPath.startsWith("\\\\") || localPath.startsWith("//");
-          if (isUNCPath) {
-            res.statusCode = 403;
-            res.end("UNC paths are not supported");
-            return;
-          }
-          // Check for Unix absolute paths (/) and Windows absolute paths (C:\, D:\, etc.)
+          // Check for Unix absolute paths first (handles // as valid Unix path - multiple slashes normalize to one)
           const isUnixAbsolute = localPath.startsWith("/");
+          // Check for Windows absolute paths (C:\, D:\, etc.)
           const isWindowsAbsolute = /^[a-zA-Z]:[/\\]/.test(localPath);
+          
           if (!isUnixAbsolute && !isWindowsAbsolute) {
             res.statusCode = 403;
             res.end("Path must be absolute");
+            return;
+          }
+
+          // Check for Windows UNC paths (\\server\share) - reject them explicitly
+          // Note: We don't check for // here because Unix treats multiple leading slashes
+          // as a single slash, so //home/user is a valid Unix path, not a UNC path
+          const isWindowsUNCPath = localPath.startsWith("\\\\");
+          if (isWindowsUNCPath) {
+            res.statusCode = 403;
+            res.end("UNC paths are not supported");
             return;
           }
 
