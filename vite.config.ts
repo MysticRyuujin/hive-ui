@@ -62,15 +62,10 @@ const localFileServerPlugin = (): Plugin => {
             return;
           }
 
-          // Normalize the path first to resolve any encoded traversal sequences,
-          // then check for directory traversal attempts
+          // Normalize the path to resolve any traversal sequences
+          // The path containment check later (using normalizedBasePath + sep)
+          // ensures the final resolved path stays within the base directory
           const normalizedLocalPath = resolve(localPath);
-          // After resolve(), if ".." still appears, the path is trying to escape the root
-          if (normalizedLocalPath.includes("..")) {
-            res.statusCode = 403;
-            res.end("Invalid path");
-            return;
-          }
 
           // Remove the query string from the request path
           let requestPath = url.pathname.replace("/api/local", "");
